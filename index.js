@@ -192,16 +192,33 @@ function startSession(code) {
     if (s.timeLeft <= 0) endSession(code);
   }, 1000);
 
-  // 내부 정보 (고래에게만)
+  // 내부 정보 — 45초마다 예고 후 실제 주가에 반영
   s.insiderTimer = setInterval(() => {
     const whaleSocket = findWhaleSocket(code);
+    const i   = Math.floor(Math.random() * STOCK_DEFS.length);
+    const dir = Math.random() > 0.5 ? 1 : -1;
+
+    // 고래에게 힌트 전송
     if (whaleSocket) {
-      const i = Math.floor(Math.random() * STOCK_DEFS.length);
-      const dir = Math.random() > 0.5 ? 1 : -1;
       const tpl = INSIDER_TEMPLATES[Math.floor(Math.random() * INSIDER_TEMPLATES.length)];
       whaleSocket.emit('insider', tpl(STOCK_DEFS[i].ticker, dir));
     }
-  }, 15000);
+
+    // 20초 후 실제 주가 반영 (예고 후 움직이는 느낌)
+    setTimeout(() => {
+      if (s.ended) return;
+      const stock = s.prices[i];
+      if (!stock) return;
+      const impact = (0.06 + Math.random() * 0.08) * dir; // 6~14% 방향성 이동
+      stock.price = Math.max(1000, Math.round(stock.price * (1 + impact)));
+      stock.history.push(stock.price);
+      if (stock.history.length > 120) stock.history.shift();
+      io.to(code).emit('prices', s.prices);
+      // 전체에 뉴스로 알림 (누가 움직인지는 숨김)
+      const label = dir > 0 ? '급등' : '급락';
+      pushNews(s, `📡 ${STOCK_DEFS[i].ticker} 갑작스러운 ${label}!`, dir > 0 ? 'up' : 'down');
+    }, 20000);
+  }, 45000);
 
   io.to(code).emit('gameStarted');
   pushNews(s, '🔔 게임이 시작됐습니다!', 'event');
