@@ -25,9 +25,9 @@ const BOT_TICK_MS  = 2000;  // 봇 시세 변동 주기
 const PRICE_BROADCAST_MS = 1000; // 가격 브로드캐스트 주기
 
 const STOCK_DEFS = [
-  { ticker: 'XS', name: 'X스페이스', basePrice: 105000,  vol: 0.046, sector: '우주' },
-  { ticker: 'WHL', name: '늑대캐피탈',   basePrice: 52000,  vol: 0.022, sector: '금융' },
-  { ticker: 'RED', name: '레드스톤전자',     basePrice: 92000, vol: 0.036, sector: '소프트웨어' },
+  { ticker: 'MOONX', name: '문엑스코퍼', basePrice: 75000,  vol: 0.022, sector: '우주' },
+  { ticker: 'DOGE3', name: '도지쓰리',   basePrice: 52000,  vol: 0.035, sector: '밈코인' },
+  { ticker: 'ZZANG', name: '짱테크',     basePrice: 135000, vol: 0.028, sector: 'AI' },
 ];
 
 const EVENT_DEFS = [
@@ -65,6 +65,10 @@ function initPrices() {
     price:     s.basePrice,
     basePrice: s.basePrice,
     history:   [s.basePrice],
+    candles:   [],
+    _open:     s.basePrice,
+    _high:     s.basePrice,
+    _low:      s.basePrice,
   }));
 }
 
@@ -135,14 +139,35 @@ function pushNews(session, text, type) {
   io.to(session.code).emit('news', item);
 }
 
-// ── 봇 틱 ──
+// ── 봇 틱 (5틱마다 캔들 1개 생성) ──
+const CANDLE_TICKS = 5;
+const tickCounters = {};
+
 function botTick(session) {
   if (session.ended) return;
+  if (!tickCounters[session.code]) tickCounters[session.code] = 0;
+  tickCounters[session.code]++;
+  const isCandle = tickCounters[session.code] % CANDLE_TICKS === 0;
+
   session.prices.forEach(p => {
     const def = STOCK_DEFS.find(d => d.ticker === p.ticker);
     const drift = (Math.random() - 0.48) * def.vol;
-    p.price = Math.max(1000, Math.round(p.price * (1 + drift)));
-    p.history.push(p.price);
+    const newPrice = Math.max(1000, Math.round(p.price * (1 + drift)));
+
+    p._high = Math.max(p._high || newPrice, newPrice);
+    p._low  = Math.min(p._low  || newPrice, newPrice);
+    p.price = newPrice;
+
+    if (isCandle) {
+      const candle = { o: p._open, h: p._high, l: p._low, c: newPrice };
+      p.candles.push(candle);
+      if (p.candles.length > 60) p.candles.shift();
+      p._open = newPrice;
+      p._high = newPrice;
+      p._low  = newPrice;
+    }
+
+    p.history.push(newPrice);
     if (p.history.length > 120) p.history.shift();
   });
 }
