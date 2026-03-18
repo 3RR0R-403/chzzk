@@ -25,12 +25,9 @@ const BOT_TICK_MS  = 2000;  // 봇 시세 변동 주기
 const PRICE_BROADCAST_MS = 1000; // 가격 브로드캐스트 주기
 
 const STOCK_DEFS = [
-  { ticker: '삼성전자', name: '삼성전자',   basePrice: 75000,  vol: 0.015, sector: '반도체' },
-  { ticker: '카카오',   name: '카카오',     basePrice: 52000,  vol: 0.022, sector: '플랫폼' },
-  { ticker: '현대차',   name: '현대차',     basePrice: 215000, vol: 0.012, sector: '자동차' },
-  { ticker: '네이버',   name: 'NAVER',      basePrice: 180000, vol: 0.018, sector: '플랫폼' },
-  { ticker: '셀트리온', name: '셀트리온',   basePrice: 160000, vol: 0.025, sector: '바이오' },
-  { ticker: '하이닉스', name: 'SK하이닉스', basePrice: 135000, vol: 0.020, sector: '반도체' },
+  { ticker: 'XS', name: 'X스페이스', basePrice: 105000,  vol: 0.046, sector: '우주' },
+  { ticker: 'WHL', name: '늑대캐피탈',   basePrice: 52000,  vol: 0.022, sector: '금융' },
+  { ticker: 'RED', name: '레드스톤전자',     basePrice: 92000, vol: 0.036, sector: '소프트웨어' },
 ];
 
 const EVENT_DEFS = [
