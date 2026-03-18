@@ -1,0 +1,7 @@
+# Netlify 배포 설정
+# client 폴더 안에 이 파일을 넣으세요
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
