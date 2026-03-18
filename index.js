@@ -20,7 +20,7 @@ app.use(express.json());
 //  상수
 // ══════════════════════════════════════════
 const INITIAL_CASH_WHALE = 200_000_000;
-const INITIAL_CASH_ANT   = 100_000_000;
+const INITIAL_CASH_ANT   = 10_000_000;
 const BOT_TICK_MS  = 2000;  // 봇 시세 변동 주기
 const PRICE_BROADCAST_MS = 1000; // 가격 브로드캐스트 주기
 
@@ -28,6 +28,9 @@ const STOCK_DEFS = [
   { ticker: 'MOONX', name: '문엑스코퍼', basePrice: 75000,  vol: 0.022, sector: '우주' },
   { ticker: 'DOGE3', name: '도지쓰리',   basePrice: 52000,  vol: 0.035, sector: '밈코인' },
   { ticker: 'ZZANG', name: '짱테크',     basePrice: 135000, vol: 0.028, sector: 'AI' },
+  { ticker: 'PEPE9', name: '페페나인',   basePrice: 8000,   vol: 0.045, sector: '밈코인' },
+  { ticker: 'NOVA',  name: '노바바이오',  basePrice: 95000,  vol: 0.030, sector: '바이오' },
+  { ticker: 'KBOT',  name: '케이봇',     basePrice: 42000,  vol: 0.025, sector: 'AI' },
 ];
 
 const EVENT_DEFS = [
@@ -120,13 +123,15 @@ function playerTotal(session, name) {
 }
 
 function getRanking(session) {
+  const initMap = { whale: INITIAL_CASH_WHALE, ant: INITIAL_CASH_ANT };
   return Object.values(session.players)
-    .map(p => ({
-      name:  p.name,
-      role:  p.role,
-      total: playerTotal(session, p.name),
-    }))
-    .sort((a, b) => b.total - a.total);
+    .map(p => {
+      const total = playerTotal(session, p.name);
+      const init  = initMap[p.role];
+      const rate  = (total - init) / init * 100;
+      return { name: p.name, role: p.role, total, init, rate };
+    })
+    .sort((a, b) => b.rate - a.rate);
 }
 
 function pushNews(session, text, type) {
@@ -345,7 +350,6 @@ io.on('connection', socket => {
     cb({ ok: true, cash: p.cash, portfolio: p.portfolio });
     io.to(code).emit('ranking', getRanking(s));
     const emoji = mode === 'buy' ? '📈' : '📉';
-    pushNews(s, `${emoji} ${name}이(가) ${ticker} ${qty}주 ${mode === 'buy' ? '매수' : '매도'}`, mode === 'buy' ? 'up' : 'down');
 
     // 고래 거래면 전체에 별도 브로드캐스트
     if (p.role === 'whale') {
@@ -373,7 +377,6 @@ io.on('connection', socket => {
 
     io.to(code).emit('prices', s.prices);
     const label = dir === 'up' ? '📈 펌핑' : '📉 덤핑';
-    pushNews(s, `🐋 고래가 ${ticker} ${label} 실행!`, 'whale');
     cb?.({ ok: true });
   });
 
