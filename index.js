@@ -329,6 +329,13 @@ io.on('connection', socket => {
     io.to(code).emit('ranking', getRanking(s));
     const emoji = mode === 'buy' ? '📈' : '📉';
     pushNews(s, `${emoji} ${name}이(가) ${ticker} ${qty}주 ${mode === 'buy' ? '매수' : '매도'}`, mode === 'buy' ? 'up' : 'down');
+
+    // 고래 거래면 전체에 별도 브로드캐스트
+    if (p.role === 'whale') {
+      const now = new Date();
+      const time = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+      io.to(code).emit('whaleTrade', { ticker, qty, mode, price, time });
+    }
   });
 
   // ── 시세 조종 (고래만) ──
